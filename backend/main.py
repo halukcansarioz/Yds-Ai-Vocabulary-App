@@ -1,3 +1,5 @@
+from fastapi import FastAPI, Depends
+from pydantic import BaseModel
 import importlib
 
 try:
@@ -27,6 +29,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+class WordUpdate(BaseModel):
+    meaning: str
+    synonym: str
+    antonym: str
+    example_sentence: str
+    turkish_translation: str
 
 def get_db():
     db = SessionLocal()
@@ -135,3 +143,99 @@ def delete_word(word_id: int, db: Session = Depends(get_db)):
     return {
         "message": f"{deleted_word} silindi"
     }
+    
+@app.get("/words/weak")
+def get_weak_words(db: Session = Depends(get_db)):
+    words = db.query(Word).filter(Word.level == "weak").all()
+    return words    
+    
+    
+@app.put("/words/{word_id}")
+def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
+    word = db.query(Word).filter(Word.id == word_id).first()
+
+    if not word:
+        return {"error": "Kelime bulunamadı"}
+
+    word.meaning = data.meaning
+    word.synonym = data.synonym
+    word.antonym = data.antonym
+    word.example_sentence = data.example_sentence
+    word.turkish_translation = data.turkish_translation
+
+    db.commit()
+    db.refresh(word)
+
+    return {
+        "message": "Kelime başarıyla güncellendi",
+        "word": word
+    }
+    
+@app.post("/words/load-default")
+def load_default_words(db: Session = Depends(get_db)):
+
+    default_words = [
+        "abandon",
+        "ability",
+        "able",
+        "abnormal",
+        "abolish",
+        "abroad",
+        "absence",
+        "absolute",
+        "absorb",
+        "abstract",
+        "academic",
+        "access",
+        "accompany",
+        "accomplish",
+        "accurate",
+        "acquire",
+        "adapt",
+        "adequate",
+        "adjacent",
+        "adjust",
+        "administration",
+        "advocate",
+        "affect",
+        "allocate",
+        "alternative",
+        "analyze",
+        "annual",
+        "approach",
+        "assess",
+        "assume"
+    ]
+
+    added = 0
+
+    for word_text in default_words:
+
+        existing = (
+            db.query(Word)
+            .filter(Word.word == word_text)
+            .first()
+        )
+
+        if existing:
+            continue
+
+        new_word = Word(
+            word=word_text,
+            meaning="Şimdilik boş",
+            synonym="Şimdilik boş",
+            antonym="Şimdilik boş",
+            example_sentence="Şimdilik boş",
+            turkish_translation="Şimdilik boş"
+        )
+
+        db.add(new_word)
+        added += 1
+
+    db.commit()
+
+    return {
+        "message": f"{added} kelime eklendi"
+    }
+    
+ 

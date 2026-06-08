@@ -346,3 +346,65 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+.edit-btn {
+  background: #4f46e5 !important;
+  color: white !important;
+}
+
+.edit-modal {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  background: white;
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.edit-modal h2 {
+  margin-top: 0;
+  margin-bottom: 22px;
+  color: #111827;
+}
+
+.edit-modal label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.edit-modal input,
+.edit-modal textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 16px;
+  font-family: Arial, sans-serif;
+}
+
+.edit-modal textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.save-btn {
+  width: 100%;
+  height: 50px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  background: #16a34a;
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.load-btn {
+  width: 180px !important;
+  background: #7c3aed !important;
+}

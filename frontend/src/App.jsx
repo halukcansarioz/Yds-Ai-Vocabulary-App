@@ -7,9 +7,19 @@ function App() {
   const [words, setWords] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
   const [searchText, setSearchText] = useState("");
-  const [showMeaning, setShowMeaning] = useState(false);
+
   const [studyMode, setStudyMode] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showMeaning, setShowMeaning] = useState(false);
+
+  const [editingWord, setEditingWord] = useState(null);
+  const [editForm, setEditForm] = useState({
+    meaning: "",
+    synonym: "",
+    antonym: "",
+    example_sentence: "",
+    turkish_translation: "",
+  });
 
   const API_URL = "http://127.0.0.1:8000";
 
@@ -23,21 +33,32 @@ function App() {
     setWords(response.data);
   };
 
+  const getWeakWords = async () => {
+    const response = await axios.get(`${API_URL}/words/weak`);
+    setWords(response.data);
+  };
+
   const refreshWords = () => {
     if (activeTab === "all") {
       getWords();
-    } else {
+    } else if (activeTab === "today") {
       getTodayReviews();
+    } else if (activeTab === "weak") {
+      getWeakWords();
     }
   };
 
   const addWord = async () => {
     if (!word.trim()) return;
-
     await axios.post(`${API_URL}/words/add?word=${word}`);
     setWord("");
     refreshWords();
   };
+
+  const loadDefaultWords = async () => {
+  await axios.post(`${API_URL}/words/load-default`);
+  refreshWords();
+};
 
   const deleteWord = async (id) => {
     await axios.delete(`${API_URL}/words/${id}`);
@@ -49,9 +70,51 @@ function App() {
     refreshWords();
   };
 
+  const openEditModal = (item) => {
+    setEditingWord(item);
+    setEditForm({
+      meaning: item.meaning || "",
+      synonym: item.synonym || "",
+      antonym: item.antonym || "",
+      example_sentence: item.example_sentence || "",
+      turkish_translation: item.turkish_translation || "",
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingWord(null);
+  };
+
+  const updateWord = async () => {
+    if (!editingWord) return;
+    await axios.put(`${API_URL}/words/${editingWord.id}`, editForm);
+    closeEditModal();
+    refreshWords();
+  };
+
+  const showAllWords = () => {
+    setActiveTab("all");
+    getWords();
+  };
+
+  const showTodayReviews = () => {
+    setActiveTab("today");
+    getTodayReviews();
+  };
+
+  const showWeakWords = () => {
+    setActiveTab("weak");
+    getWeakWords();
+  };
+
+  const filteredWords = words.filter((item) =>
+    item.word.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const currentWord = filteredWords[currentIndex];
+
   const startStudyMode = () => {
     if (filteredWords.length === 0) return;
-
     setStudyMode(true);
     setCurrentIndex(0);
     setShowMeaning(false);
@@ -64,8 +127,6 @@ function App() {
   };
 
   const reviewCurrentWord = async (status) => {
-    const currentWord = filteredWords[currentIndex];
-
     if (!currentWord) return;
 
     await axios.post(`${API_URL}/words/${currentWord.id}/review?status=${status}`);
@@ -80,40 +141,27 @@ function App() {
     }
   };
 
-  const showAllWords = () => {
-    setActiveTab("all");
-    getWords();
-  };
-
-  const showTodayReviews = () => {
-    setActiveTab("today");
-    getTodayReviews();
-  };
-
   useEffect(() => {
-    const loadWords = async () => {
-      await getWords();
-    };
-
-    loadWords();
+    axios.get(`${API_URL}/words`).then((response) => {
+      setWords(response.data);
+    });
   }, []);
 
-  const filteredWords = words.filter((item) =>
-    item.word.toLowerCase().includes(searchText.toLowerCase())
-  );
-  const currentWord = filteredWords[currentIndex];
   const knownCount = words.filter((w) => w.level === "known").length;
   const mediumCount = words.filter((w) => w.level === "medium").length;
   const weakCount = words.filter((w) => w.level === "weak").length;
+
+  const progressPercent =
+    filteredWords.length > 0
+      ? ((currentIndex + 1) / filteredWords.length) * 100
+      : 0;
 
   return (
     <div className="page">
       <h1 className="title">YDS / YÖKDİL AI Kelime Uygulaması</h1>
 
       <div className="study-mode-box">
-        <button onClick={startStudyMode}>
-          🎴 Kelime Kartı Modu
-        </button>
+        <button onClick={startStudyMode}>🎴 Kelime Kartı Modu</button>
       </div>
 
       <div className="top-area">
@@ -153,8 +201,17 @@ function App() {
           >
             🔥 Bugünkü Tekrarlar
           </button>
+
+          <button
+            className={activeTab === "weak" ? "active-tab" : ""}
+            onClick={showWeakWords}
+          >
+            🔴 Zayıf Kelimeler
+          </button>
         </div>
       </div>
+
+
 
       <div className="add-box">
         <input
@@ -165,10 +222,18 @@ function App() {
         />
 
         <button onClick={addWord}>Ekle</button>
+
+        <button className="load-btn" onClick={loadDefaultWords}>
+          📥 Paket Yükle
+        </button>
       </div>
 
       <h2 className="section-title">
-        {activeTab === "all" ? "Kelime Listem" : "Bugünkü Tekrarlar"}
+        {activeTab === "all"
+          ? "Kelime Listem"
+          : activeTab === "today"
+          ? "Bugünkü Tekrarlar"
+          : "Zayıf Kelimeler"}
       </h2>
 
       <div className="search-box">
@@ -218,6 +283,10 @@ function App() {
                 Biliyorum
               </button>
 
+              <button className="edit-btn" onClick={() => openEditModal(item)}>
+                Düzenle
+              </button>
+
               <button className="delete-btn" onClick={() => deleteWord(item.id)}>
                 Sil
               </button>
@@ -240,7 +309,7 @@ function App() {
             <div className="progress-bar">
               <div
                 className="progress-fill"
-                style={{ width: `${filteredWords.length > 0 ? ((currentIndex + 1) / filteredWords.length) * 100 : 0}%` }}
+                style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
 
@@ -304,6 +373,68 @@ function App() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {editingWord && (
+        <div className="modal-overlay">
+          <div className="edit-modal">
+            <button className="close-btn" onClick={closeEditModal}>
+              ×
+            </button>
+
+            <h2>{editingWord.word} kelimesini düzenle</h2>
+
+            <label>Anlam</label>
+            <input
+              value={editForm.meaning}
+              onChange={(e) =>
+                setEditForm({ ...editForm, meaning: e.target.value })
+              }
+            />
+
+            <label>Eş Anlamlı</label>
+            <input
+              value={editForm.synonym}
+              onChange={(e) =>
+                setEditForm({ ...editForm, synonym: e.target.value })
+              }
+            />
+
+            <label>Zıt Anlamlı</label>
+            <input
+              value={editForm.antonym}
+              onChange={(e) =>
+                setEditForm({ ...editForm, antonym: e.target.value })
+              }
+            />
+
+            <label>Örnek Cümle</label>
+            <textarea
+              value={editForm.example_sentence}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  example_sentence: e.target.value,
+                })
+              }
+            />
+
+            <label>Türkçe Çeviri</label>
+            <textarea
+              value={editForm.turkish_translation}
+              onChange={(e) =>
+                setEditForm({
+                  ...editForm,
+                  turkish_translation: e.target.value,
+                })
+              }
+            />
+
+            <button className="save-btn" onClick={updateWord}>
+              Kaydet
+            </button>
           </div>
         </div>
       )}
