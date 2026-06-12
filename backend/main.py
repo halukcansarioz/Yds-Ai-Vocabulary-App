@@ -1,6 +1,11 @@
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 import importlib
+import csv
+import os
+
 
 try:
     fastapi = importlib.import_module("fastapi")
@@ -92,7 +97,9 @@ def review_word(word_id: int, status: str, db: Session = Depends(get_db)):
 
     if not word:
         return {"error": "Kelime bulunamadı"}
-
+    
+    word.review_count += 1
+    
     if status == "biliyorum":
         word.next_review = datetime.utcnow() + timedelta(days=7)
         word.level = "known"
@@ -143,13 +150,7 @@ def delete_word(word_id: int, db: Session = Depends(get_db)):
     return {
         "message": f"{deleted_word} silindi"
     }
-    
-@app.get("/words/weak")
-def get_weak_words(db: Session = Depends(get_db)):
-    words = db.query(Word).filter(Word.level == "weak").all()
-    return words    
-    
-    
+        
 @app.put("/words/{word_id}")
 def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
     word = db.query(Word).filter(Word.id == word_id).first()
@@ -171,71 +172,114 @@ def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
         "word": word
     }
     
+@app.get("/words/weak")
+def get_weak_words(db: Session = Depends(get_db)):
+    words = db.query(Word).filter(Word.level == "weak").all()
+    return words
+
 @app.post("/words/load-default")
 def load_default_words(db: Session = Depends(get_db)):
+    file_path = os.path.join("data", "yds_words.csv")
 
-    default_words = [
-        "abandon",
-        "ability",
-        "able",
-        "abnormal",
-        "abolish",
-        "abroad",
-        "absence",
-        "absolute",
-        "absorb",
-        "abstract",
-        "academic",
-        "access",
-        "accompany",
-        "accomplish",
-        "accurate",
-        "acquire",
-        "adapt",
-        "adequate",
-        "adjacent",
-        "adjust",
-        "administration",
-        "advocate",
-        "affect",
-        "allocate",
-        "alternative",
-        "analyze",
-        "annual",
-        "approach",
-        "assess",
-        "assume"
-    ]
+    if not os.path.exists(file_path):
+        return {
+            "error": "yds_words.csv dosyası bulunamadı"
+        }
 
     added = 0
 
-    for word_text in default_words:
+    with open(file_path, mode="r", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
 
-        existing = (
-            db.query(Word)
-            .filter(Word.word == word_text)
-            .first()
-        )
+        for row in reader:
+            word_text = row["word"].strip().lower()
 
-        if existing:
-            continue
+            if not word_text:
+                continue
 
-        new_word = Word(
-            word=word_text,
-            meaning="Şimdilik boş",
-            synonym="Şimdilik boş",
-            antonym="Şimdilik boş",
-            example_sentence="Şimdilik boş",
-            turkish_translation="Şimdilik boş"
-        )
+            existing = db.query(Word).filter(Word.word == word_text).first()
 
-        db.add(new_word)
-        added += 1
+            if existing:
+                continue
+
+            new_word = Word(
+                word=word_text,
+                meaning="Şimdilik boş",
+                synonym="Şimdilik boş",
+                antonym="Şimdilik boş",
+                example_sentence="Şimdilik boş",
+                turkish_translation="Şimdilik boş"
+            )
+
+            db.add(new_word)
+            added += 1
 
     db.commit()
 
     return {
-        "message": f"{added} kelime eklendi"
+        "message": f"{added} kelime CSV dosyasından eklendi"
     }
     
- 
+@app.delete("/words/{word_id}")
+def delete_word(word_id: int, db: Session = Depends(get_db)):
+    word = db.query(Word).filter(Word.id == word_id).first()
+
+    if not word:
+        return {"error": "Kelime bulunamadı"}
+
+    deleted_word = word.word
+
+    db.delete(word)
+    db.commit()
+
+    return {
+        "message": f"{deleted_word} silindi"
+    }
+
+
+@app.put("/words/{word_id}")
+def update_word(word_id: int, data: WordUpdate, db: Session = Depends(get_db)):
+    word = db.query(Word).filter(Word.id == word_id).first()
+
+    if not word:
+        return {"error": "Kelime bulunamadı"}
+
+    word.meaning = data.meaning
+    word.synonym = data.synonym
+    word.antonym = data.antonym
+    word.example_sentence = data.example_sentence
+    word.turkish_translation = data.turkish_translation
+
+    db.commit()
+    db.refresh(word)
+
+    return {
+        "message": "Kelime başarıyla güncellendi",
+        "word": word
+    }
+
+
+@app.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    total = db.query(Word).count()
+    known = db.query(Word).filter(Word.level == "known").count()
+    medium = db.query(Word).filter(Word.level == "medium").count()
+    weak = db.query(Word).filter(Word.level == "weak").count()
+
+    return {
+        "total": total,
+        "known": known,
+        "medium": medium,
+        "weak": weak
+    }
+    
+@app.get("/stats/top-reviewed")
+def get_top_reviewed_words(db: Session = Depends(get_db)):
+    words = (
+        db.query(Word)
+        .order_by(Word.review_count.desc())
+        .limit(5)
+        .all()
+    )
+
+    return words

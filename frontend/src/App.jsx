@@ -6,10 +6,27 @@ function App() {
   const [word, setWord] = useState("");
   const [words, setWords] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
+  const [showProgress, setShowProgress] = useState(false);
   const [searchText, setSearchText] = useState("");
+
+  const [stats, setStats] = useState({
+    total: 0,
+    known: 0,
+    medium: 0,
+    weak: 0,
+  });
+
+  const [topReviewedWords, setTopReviewedWords] = useState([]);
 
   const [studyMode, setStudyMode] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [studyWords, setStudyWords] = useState([]);
+  const [studiedCount, setStudiedCount] = useState(0);
+
+  const [totalReviews, setTotalReviews] = useState(
+    Number(localStorage.getItem("totalReviews") || 0)
+  );
+
   const [showMeaning, setShowMeaning] = useState(false);
 
   const [editingWord, setEditingWord] = useState(null);
@@ -26,6 +43,16 @@ function App() {
   const getWords = async () => {
     const response = await axios.get(`${API_URL}/words`);
     setWords(response.data);
+  };
+
+  const getStats = async () => {
+    const response = await axios.get(`${API_URL}/stats`);
+    setStats(response.data);
+  };
+
+  const getTopReviewedWords = async () => {
+    const response = await axios.get(`${API_URL}/stats/top-reviewed`);
+    setTopReviewedWords(response.data);
   };
 
   const getTodayReviews = async () => {
@@ -111,10 +138,19 @@ function App() {
     item.word.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  const currentWord = filteredWords[currentIndex];
-
+  const currentWord = studyWords[currentIndex];
+  
   const startStudyMode = () => {
-    if (filteredWords.length === 0) return;
+    if (filteredWords.length === 0) {
+      alert("Bu sekmede çalışılacak kelime yok.");
+      setShowMeaning(false);
+      setStudiedCount(0);
+      return;
+    }
+
+    const shuffledWords = [...filteredWords].sort(() => Math.random() - 0.5);
+
+    setStudyWords(shuffledWords);
     setStudyMode(true);
     setCurrentIndex(0);
     setShowMeaning(false);
@@ -124,36 +160,43 @@ function App() {
     setStudyMode(false);
     setCurrentIndex(0);
     setShowMeaning(false);
+    setStudyWords([]);
+    setStudiedCount(0);
   };
 
   const reviewCurrentWord = async (status) => {
     if (!currentWord) return;
 
     await axios.post(`${API_URL}/words/${currentWord.id}/review?status=${status}`);
+    setStudiedCount((prev) => prev + 1);
 
-    if (currentIndex < filteredWords.length - 1) {
+    setTotalReviews((prev) => {
+    const newValue = prev + 1;
+    localStorage.setItem("totalReviews", newValue);
+    return newValue;
+  });
+
+    if (currentIndex < studyWords.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setShowMeaning(false);
     } else {
       alert("Çalışma tamamlandı 🎉");
       closeStudyMode();
       refreshWords();
+      getTopReviewedWords();
     }
   };
 
   useEffect(() => {
     axios.get(`${API_URL}/words`).then((response) => {
       setWords(response.data);
+      getStats();
     });
   }, []);
 
-  const knownCount = words.filter((w) => w.level === "known").length;
-  const mediumCount = words.filter((w) => w.level === "medium").length;
-  const weakCount = words.filter((w) => w.level === "weak").length;
-
   const progressPercent =
-    filteredWords.length > 0
-      ? ((currentIndex + 1) / filteredWords.length) * 100
+    studyWords.length > 0
+      ? ((currentIndex + 1) / studyWords.length) * 100
       : 0;
 
   return (
@@ -167,22 +210,22 @@ function App() {
       <div className="top-area">
         <div className="stats">
           <div className="stat-card">
-            <h3>{words.length}</h3>
+            <h3>{stats.total}</h3>
             <p>Toplam Kelime</p>
           </div>
 
           <div className="stat-card">
-            <h3>{knownCount}</h3>
+            <h3>{stats.known}</h3>
             <p>Bilinen</p>
           </div>
 
           <div className="stat-card">
-            <h3>{mediumCount}</h3>
+            <h3>{stats.medium}</h3>
             <p>Zorlanılan</p>
           </div>
 
           <div className="stat-card">
-            <h3>{weakCount}</h3>
+            <h3>{stats.weak}</h3>
             <p>Bilinmeyen</p>
           </div>
         </div>
@@ -207,6 +250,13 @@ function App() {
             onClick={showWeakWords}
           >
             🔴 Zayıf Kelimeler
+          </button>
+
+          <button
+            className={showProgress ? "active-tab" : ""}
+            onClick={() => setShowProgress(!showProgress)}
+          >
+            📊 İlerleme
           </button>
         </div>
       </div>
@@ -236,6 +286,94 @@ function App() {
           : "Zayıf Kelimeler"}
       </h2>
 
+      {showProgress && (
+        <div className="progress-panel">
+          <h2>📊 İlerleme Özeti</h2>
+
+          <div className="progress-grid">
+            <div>
+              <strong>Toplam Kelime:</strong>
+              <span>{stats.total}</span>
+            </div>
+
+            <div>
+              <strong>Bilinen:</strong>
+              <span>{stats.known}</span>
+            </div>
+
+            <div>
+              <strong>Zorlanılan:</strong>
+              <span>{stats.medium}</span>
+            </div>
+
+            <div>
+              <strong>Bilinmeyen:</strong>
+              <span>{stats.weak}</span>
+            </div>
+
+            <div>
+              <strong>Toplam Tekrar:</strong>
+              <span>{totalReviews}</span>
+            </div>
+
+            <div>
+              <strong>Başarı Oranı:</strong>
+
+            <div className="success-card">
+              <div className="success-header">
+                <strong>Başarı Oranı:</strong>
+                <span>
+                  {stats.total > 0
+                    ? Math.round((stats.known / stats.total) * 100)
+                    : 0}
+                  %
+                </span>
+              </div>
+
+              <div className="success-bar">
+                <div
+                  className="success-fill"
+                  style={{
+                    width: `${
+                      stats.total > 0
+                        ? Math.round((stats.known / stats.total) * 100)
+                        : 0
+                    }%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+              <div className="success-bar">
+                <div
+                  className="success-fill"
+                  style={{
+                    width: `${
+                      stats.total > 0
+                        ? Math.round((stats.known / stats.total) * 100)
+                        : 0
+                    }%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="top-reviewed">
+            <h3>🏆 En Çok Çalışılan Kelimeler</h3>
+
+            {topReviewedWords.length === 0 ? (
+              <p>Henüz çalışma verisi yok.</p>
+            ) : (
+              topReviewedWords.map((item, index) => (
+                <div className="top-reviewed-item" key={item.id}>
+                  <span>{index + 1}. {item.word}</span>
+                  <strong>{item.review_count} tekrar</strong>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
       <div className="search-box">
         <input
           type="text"
@@ -302,8 +440,12 @@ function App() {
               ×
             </button>
 
-            <p className="card-counter">
-              {currentIndex + 1} / {filteredWords.length}
+            <p className="studied-count">
+              Bugün çalışılan: {studiedCount}
+            </p>
+
+            <p className="total-reviews">
+              🏆 Toplam tekrar: {totalReviews}
             </p>
 
             <div className="progress-bar">

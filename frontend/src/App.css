@@ -408,3 +408,104 @@
   width: 180px !important;
   background: #7c3aed !important;
 }
+
+.studied-count {
+  text-align: center;
+  color: #2563eb;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.total-reviews {
+  text-align: center;
+  color: #7c3aed;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.progress-panel {
+  background: white;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.progress-panel h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.progress-grid div {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-grid span {
+  font-weight: 700;
+  color: #2563eb;
+}
+
+@media (max-width: 900px) {
+  .progress-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.top-reviewed {
+  margin-top: 24px;
+}
+
+.top-reviewed h3 {
+  margin-bottom: 14px;
+}
+
+.top-reviewed-item {
+  display: flex;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.top-reviewed-item strong {
+  color: #7c3aed;
+}
+
+.success-card {
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+.success-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.success-bar {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.success-fill {
+  height: 100%;
+  background: #16a34a;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}

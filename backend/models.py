@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
-
+from sqlalchemy import Column, Integer, String, DateTime
 from database import Base
 
 
@@ -22,5 +22,7 @@ class Word(Base):
     turkish_translation = Column(String)
 
     level = Column(String, default="unknown")
+    
+    review_count = Column(Integer, default=0)
 
     next_review = Column(DateTime, default=datetime.utcnow)
