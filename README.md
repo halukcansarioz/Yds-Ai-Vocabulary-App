@@ -7,6 +7,16 @@ A modern vocabulary learning application developed for YDS and YÖKDİL exam pre
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57)
 ![Status](https://img.shields.io/badge/Status-Active-success) 
+
+## 🎯 Target Audience
+
+This project is designed for:
+
+- YDS students
+- YÖKDİL students
+- Academic English learners
+- Vocabulary-focused language learners
+
 ## ✨ Features
 
 - 📚 Vocabulary Management
@@ -52,19 +62,36 @@ A modern vocabulary learning application developed for YDS and YÖKDİL exam pre
 - Git
 - GitHub
 
-## 📷 Screenshots
+## 🚀 Key Features
 
-### Main Dashboard
+- 📚 Vocabulary Management
+- 🎴 Flashcard Study Mode
+- 🧠 Spaced Repetition System (SRS)
+- 🔴 Weak Word Analysis
+- 📊 Progress Dashboard
+- 🏆 Most Reviewed Words
+- 📥 CSV Vocabulary Import
+- 🔍 Instant Search
+- 📈 Success Rate Tracking
 
-![Dashboard](screenshots/dashboard.png)
+## 📋 Roadmap
 
-### Flashcard Mode
+### Completed
+- [x] Flashcard Mode
+- [x] Random Study Mode
+- [x] Weak Word Tracking
+- [x] Progress Dashboard
+- [x] CSV Import
 
-![Flashcard](screenshots/flashcard.png)
+### In Progress
+- [ ] PDF Vocabulary Extraction
+- [ ] AI Word Generator
+- [ ] Academic Text Analysis
 
-### Progress Panel
-
-![Progress](screenshots/progress.png)
+### Future
+- [ ] User Accounts
+- [ ] Cloud Sync
+- [ ] Mobile Application
 
 ## 🚀 Installation
 
