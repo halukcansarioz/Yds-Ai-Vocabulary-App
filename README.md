@@ -8,6 +8,7 @@ A modern vocabulary learning application developed for YDS and YÖKDİL exam pre
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57)
 ![Status](https://img.shields.io/badge/Status-Active-success) 
 
+
 ## 🎯 Target Audience
 
 This project is designed for:
