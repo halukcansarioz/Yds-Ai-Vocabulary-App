@@ -47,6 +47,19 @@ This project is designed for:
   - Bulk vocabulary loading
   - Easy dataset expansion
 
+## Architecture
+
+```mermaid
+flowchart LR
+    A[React + Vite Frontend] -->|REST API / Axios| B[FastAPI Backend]
+    B -->|Prompt / Request| C[AI Service]
+    C -->|Generated Content| B
+    B -->|SQLAlchemy ORM| D[(SQLite Database)]
+    D -->|Query Results| B
+    B -->|JSON Response| A
+```
+
+
 ## 🛠️ Technologies
 
 ### Frontend
