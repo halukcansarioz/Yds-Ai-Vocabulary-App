@@ -1,6 +1,4 @@
-from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import importlib
 import csv
@@ -19,7 +17,6 @@ Depends = fastapi.Depends
 HTTPException = fastapi.HTTPException
 CORSMiddleware = cors.CORSMiddleware
 Session = sqlalchemy_orm.Session
-from datetime import datetime, timedelta
 from database import Base, engine, SessionLocal
 from models import Word
 
